@@ -1,4 +1,4 @@
-# AdaFruit.IO Windows 10 IoTCore FieldGateway for nRF24L01 device
+# AdaFruit.IO Windows 10 IoTCore FieldGateway for nRF24L01 devices
 
 A Windows 10 Iot Core based field gateway for uploading telemetry data from [nRF24L01](http://www.nordicsemi.com/eng/Products/2.4GHz-RF/nRF24L01) enabled devices to [AdaFruit.IO](https://io.adafruit.com/)
 
