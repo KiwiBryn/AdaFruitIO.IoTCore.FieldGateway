@@ -22,7 +22,9 @@ Thanks to
 * @abachman (Adafruit.IO swagger docs fixes)
 * @RSuter [NSwag](https://github.com/RSuter/NSwag)
 
-I'm have sample Arduino, Seeeduino, Netduino, devDuino client projects and deployment pacakges under development
+The AdaFruit.IO Client was generated using NSwag and the [swagger definition files](https://github.com/adafruit/io-api/blob/gh-pages/v2.json)
+
+I'm have sample Arduino, Seeeduino, Netduino, devDuino client projects and deployment packages under development
 
 AdaFruit.IO API is case sensitive so pay attention to your Feed Key/API endpoints
 
