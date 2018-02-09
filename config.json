@@ -1,0 +1,12 @@
+{
+  "AdaFruitIOUserName": "BrynHLewis",
+  "AdaFruitIOApiKey": "52b9ce8466a94086a8daac5aebb7d48d",
+  "AdaFruitIOGroupName": "105windermere",
+  "RF24Address": "Base1",
+  "RF24Channel": 15,
+  "RF24DataRate": "DR250Kbps",
+  "RF24PowerLevel": "High",
+  "RF24AutoAcknowledge": true,
+  "RF24DynamicAcknowledge": false,
+  "RF24DynamicPayload": true
+}
