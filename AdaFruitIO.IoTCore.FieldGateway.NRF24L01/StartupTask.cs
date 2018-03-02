@@ -63,7 +63,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
             return;
          }
 
-         // Configure the AdaFruit API client 
+         // Configure the AdaFruit API client
          LoggingFields adaFruitIOSettings = new LoggingFields();
          if (!string.IsNullOrEmpty(this.applicationSettings.AdaFruitIOBaseUrl))
          {
@@ -87,7 +87,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
          this.rf24.Address = Encoding.UTF8.GetBytes(this.applicationSettings.RF24Address);
          this.rf24.Channel = this.applicationSettings.RF24Channel;
 
-         // The order of setting the power level and Data rate appears to be important, most 
+         // The order of setting the power level and Data rate appears to be important, most
          // probably register masking issue in RF24 library which needs some further investigation
          this.rf24.PowerLevel = this.applicationSettings.RF24PowerLevel;
          this.rf24.DataRate = this.applicationSettings.RF24DataRate;
@@ -143,7 +143,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
 
       private void Radio_OnDataReceived(byte[] messageData)
       {
-         // Check the payload is long enough to contain header length 
+         // Check the payload is long enough to contain header length
          if (messageData.Length < MessageHeaderLength)
          {
             this.loggingChannel.LogMessage("Message too short to contain header", LoggingLevel.Warning);
@@ -151,7 +151,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
          }
 
          // Extract the top nibble of header byte which is message type
-         switch ((MessagePayloadType)(messageData[MessageHeaderPosition] >> 4)) 
+         switch ((MessagePayloadType)(messageData[MessageHeaderPosition] >> 4))
          {
             case MessagePayloadType.Echo:
                this.MessageDataDisplay(messageData);
@@ -197,7 +197,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
          char[] sensorIdAndValueSeparator = new char[] { ' ' };
 
          // Mask off lower nibble of message header, which is device ID length
-         byte deviceIdLength = (byte)(messageData[MessageHeaderPosition] & (byte)0b1111); 
+         byte deviceIdLength = (byte)(messageData[MessageHeaderPosition] & (byte)0b1111);
 
          // Check the payload is long enough to contain the header & specified SensorDeviceID length
          if (messageData.Length < MessageHeaderLength + deviceIdLength)
@@ -255,6 +255,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
 
             Debug.WriteLine(" Sensor {0}{1} Value {2}", deviceId, sensorId, value);
          }
+
          this.loggingChannel.LogEvent("Sensor readings", sensorData, LoggingLevel.Verbose);
 
          try
