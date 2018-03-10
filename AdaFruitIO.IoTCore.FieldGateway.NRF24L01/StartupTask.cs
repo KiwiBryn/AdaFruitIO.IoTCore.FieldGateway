@@ -114,16 +114,43 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
          StorageFolder localFolder = ApplicationData.Current.LocalFolder;
 
          // Check to see if file exists
-         StorageFile configurationFile = (StorageFile)await localFolder.TryGetItemAsync(ConfigurationFilename);
-         if (configurationFile == null)
+         if (localFolder.TryGetItemAsync(ConfigurationFilename).GetAwaiter().GetResult() == null)
          {
             this.loggingChannel.LogMessage("Configuration file " + ConfigurationFilename + " not found", LoggingLevel.Error);
+
+            this.applicationSettings = new ApplicationSettings()
+            {
+               AdaFruitIOBaseUrl = "AdaFruit Base URL can go here",
+               AdaFruitIOUserName = "AdaFruit User name goes here",
+               AdaFruitIOApiKey = "AdaFruitIO API Ket goes here",
+               AdaFruitIOGroupName = "AdaFruit Group name goes here",
+               RF24Address = "Base1",
+               RF24Channel = 15,
+               RF24DataRate = DataRate.DR250Kbps,
+               RF24PowerLevel = PowerLevel.High,
+               IsRF24AutoAcknowledge = true,
+               IsRF24DynamicAcknowledge = false,
+               IsRF24DynamicPayload = true,
+            };
+
+            // Create empty configuration file
+            StorageFile configurationFile = await localFolder.CreateFileAsync(ConfigurationFilename, CreationCollisionOption.OpenIfExists);
+            using (Stream stream = await configurationFile.OpenStreamForWriteAsync())
+            {
+               using (TextWriter streamWriter = new StreamWriter(stream))
+               {
+                  streamWriter.Write(JsonConvert.SerializeObject(this.applicationSettings, Formatting.Indented));
+               }
+            }
+
             return false;
          }
 
          try
          {
             // Load the configuration settings
+            StorageFile configurationFile = (StorageFile)await localFolder.TryGetItemAsync(ConfigurationFilename);
+
             using (Stream stream = await configurationFile.OpenStreamForReadAsync())
             {
                using (StreamReader streamReader = new StreamReader(stream))
@@ -131,14 +158,14 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
                   this.applicationSettings = JsonConvert.DeserializeObject<ApplicationSettings>(streamReader.ReadToEnd());
                }
             }
+
+            return true;
          }
          catch (Exception ex)
          {
             this.loggingChannel.LogMessage("Configuration file " + ConfigurationFilename + " load failed " + ex.Message, LoggingLevel.Error);
             return false;
          }
-
-         return true;
       }
 
       private void Radio_OnDataReceived(byte[] messageData)
