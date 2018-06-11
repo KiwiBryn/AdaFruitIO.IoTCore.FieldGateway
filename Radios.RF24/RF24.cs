@@ -24,7 +24,7 @@
         ///   Event Handler for when data is received
         /// </summary>
         /// <param name="data"></param>
-        public delegate void OnDataRecievedHandler(byte[] data);
+        public delegate void OnDataReceivedHandler(byte[] data);
 
         #endregion Delegates
 
@@ -33,7 +33,7 @@
         /// <summary>
         ///   Occurs when data packet has been received
         /// </summary>
-        public event OnDataRecievedHandler OnDataReceived = delegate { };
+        public event OnDataReceivedHandler OnDataReceived = delegate { };
 
         /// <summary>
         ///   Occurs when ack has been received for send packet
