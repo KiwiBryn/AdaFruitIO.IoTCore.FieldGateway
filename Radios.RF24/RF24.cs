@@ -35,25 +35,25 @@
         /// </summary>
         public event OnDataReceivedHandler OnDataReceived = delegate { };
 
-        /// <summary>
-        ///   Occurs when ack has been received for send packet
-        /// </summary>
-        public event EventHandler OnTransmitSuccess = delegate { };
+      /// <summary>
+      ///   Occurs when ack has been received for send packet
+      /// </summary>
+      public event EventHandler OnTransmitSuccess = delegate { };
 
-        /// <summary>
-        ///   Occurs when no ack has been received for send packet
-        /// </summary>
-        public event EventHandler OnTransmitFailed = delegate { };
+      /// <summary>
+      ///   Occurs when no ack has been received for send packet
+      /// </summary>
+      public event EventHandler OnTransmitFailed = delegate { };
 
-        #endregion Events
+      #endregion Events
 
-        #region Properties
+      #region Properties
 
-        /// <summary>
-        ///   Gets a value indicating whether module is enabled (RX or TX mode). Setting to true will enable the module,
-        ///   false will disable it.
-        /// </summary>
-        public bool IsEnabled
+      /// <summary>
+      ///   Gets a value indicating whether module is enabled (RX or TX mode). Setting to true will enable the module,
+      ///   false will disable it.
+      /// </summary>
+      public bool IsEnabled
         {
             get
             {
@@ -342,8 +342,6 @@
         /// </summary>     
         public RF24()
         {
-            _transmitSuccessFlag = new ManualResetEvent(false);
-            _transmitFailedFlag = new ManualResetEvent(false);
         }
         
         /// <summary>
@@ -556,40 +554,6 @@
             IsEnabled = true;
         }
 
-        /// <summary>
-        ///   Sends bytes to given address. This is a blocking method that returns true if data was
-        ///   received by the recipient or false if timeout occured.
-        /// </summary>
-        /// <param name="address">
-        ///   Address to send bytes to
-        /// </param>
-        /// <param name="bytes">
-        ///   Bytes to be sent
-        /// </param>
-        /// <param name="timeout">
-        ///   Timeout in milliseconds
-        /// </param>
-        /// <returns>true if data was received by the recipient, false otherwise</returns>
-        public bool SendTo(byte[] address, byte[] bytes, int timeout)
-        {
-            var startTime = DateTime.Now;
-
-            while (true)
-            {
-                _transmitSuccessFlag.Reset();
-                _transmitFailedFlag.Reset();
-
-                SendTo(address, bytes);
-
-                if (WaitHandle.WaitAny(new[] { _transmitSuccessFlag, _transmitFailedFlag }, 200) == 0)
-                    return true;
-
-                if (DateTime.Now.CompareTo(startTime.AddMilliseconds(timeout)) > 0)
-                    return false;
-
-                Debug.Write("Retransmitting packet...");
-            }
-        }
 
         #endregion Public Members
 
@@ -600,8 +564,6 @@
         private GpioPin _irqPin;
         private SpiDevice _spiPort;
         private bool _enabled;
-        private readonly ManualResetEvent _transmitSuccessFlag;
-        private readonly ManualResetEvent _transmitFailedFlag;
         private const byte MAX_CHANNEL = 127;
 
         #endregion Private Data
@@ -667,121 +629,119 @@
         {
             Debug.WriteLine("Interrupt Triggered: " + args.Edge.ToString());
 
-            if (args.Edge == GpioPinEdge.FallingEdge)
+            if (args.Edge != GpioPinEdge.FallingEdge)
+               return;
+
+            if (!IsInitialized)
+               return;
+
+            if (!_enabled)
             {
-                if (!IsInitialized)
-                    return;
+               FlushReceiveBuffer();
+               FlushTransferBuffer();
+               return;
+            }
 
-                if (!_enabled)
-                {
-                    FlushReceiveBuffer();
-                    FlushTransferBuffer();
-                    return;
-                }
+            // Disable RX/TX
+            IsEnabled = false;
 
-                // Disable RX/TX
-                IsEnabled = false;
+            // Set PRX
+            SetReceiveMode();
 
-                // Set PRX
-                SetReceiveMode();
+            // there are 3 rx pipes in rf module so 3 arrays should be enough to store incoming data
+            // sometimes though more than 3 data packets are received somehow
+            var payloads = new byte[6][];
 
-                // there are 3 rx pipes in rf module so 3 arrays should be enough to store incoming data
-                // sometimes though more than 3 data packets are received somehow
-                var payloads = new byte[6][];
+            var status = GetStatus();
+            byte payloadCount = 0;
+            var payloadCorrupted = false;
 
-                var status = GetStatus();
-                byte payloadCount = 0;
-                var payloadCorrupted = false;
+            if (status.DataReady)
+            {
+               while (!status.RxEmpty)
+               {
+                  // Read payload size
+                  var payloadLength = Execute(Commands.R_RX_PL_WID, 0x00, new byte[1]);
 
-                if (status.DataReady)
-                {
-                    while (!status.RxEmpty)
-                    {
-                        // Read payload size
-                        var payloadLength = Execute(Commands.R_RX_PL_WID, 0x00, new byte[1]);
+                  // this indicates corrupted data
+                  if (payloadLength[1] > 32)
+                  {
+                        payloadCorrupted = true;
 
-                        // this indicates corrupted data
-                        if (payloadLength[1] > 32)
+                        // Flush anything that remains in buffer
+                        FlushReceiveBuffer();
+                  }
+                  else
+                  {
+                        if (payloadCount >= payloads.Length)
                         {
-                            payloadCorrupted = true;
-
-                            // Flush anything that remains in buffer
-                            FlushReceiveBuffer();
+                           Debug.WriteLine("Unexpected payloadCount value = " + payloadCount);
+                           FlushReceiveBuffer();
                         }
                         else
                         {
-                            if (payloadCount >= payloads.Length)
-                            {
-                                Debug.WriteLine("Unexpected payloadCount value = " + payloadCount);
-                                FlushReceiveBuffer();
-                            }
-                            else
-                            {
-                                // Read payload data
-                                payloads[payloadCount] = Execute(Commands.R_RX_PAYLOAD, 0x00, new byte[payloadLength[1]]);
-                                payloadCount++;
-                            }
+                           // Read payload data
+                           payloads[payloadCount] = Execute(Commands.R_RX_PAYLOAD, 0x00, new byte[payloadLength[1]]);
+                           payloadCount++;
                         }
+                  }
 
-                        // Clear RX_DR bit 
-                        var result = Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.RX_DR) });
-                        status.Update(result[0]);
-                    }
-                }
-
-                if (status.ResendLimitReached)
-                {
-                    FlushTransferBuffer();
-
-                    // Clear MAX_RT bit in status register
-                    Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.MAX_RT) });
-                }
-
-                if (status.TxFull)
-                {
-                    FlushTransferBuffer();
-                }
-
-                if (status.DataSent)
-                {
-                    // Clear TX_DS bit in status register
-                    Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.TX_DS) });
-                    Debug.WriteLine("Data Sent!");
-                }
-
-                // Enable RX
-                IsEnabled = true;
-
-                if (payloadCorrupted)
-                {
-                    Debug.WriteLine("Corrupted data received");
-                }
-                else if (payloadCount > 0)
-                {
-                    if (payloadCount > payloads.Length)
-                        Debug.WriteLine("Unexpected payloadCount value = " + payloadCount);
-
-                    for (var i = 0; i < System.Math.Min(payloadCount, payloads.Length); i++)
-                    {
-                        var payload = payloads[i];
-                        var payloadWithoutCommand = new byte[payload.Length - 1];
-                        Array.Copy(payload, 1, payloadWithoutCommand, 0, payload.Length - 1);
-                        OnDataReceived(payloadWithoutCommand);
-                    }
-                }
-                else if (status.DataSent)
-                {
-                    _transmitSuccessFlag.Set();
-                    OnTransmitSuccess();
-                }
-                else
-                {
-                    _transmitFailedFlag.Set();
-                    OnTransmitFailed();
-                }
+                  // Clear RX_DR bit 
+                  var result = Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.RX_DR) });
+                  status.Update(result[0]);
+               }
             }
-        }
 
-        #endregion Private Helpers
-    }
+            if (status.ResendLimitReached)
+            {
+               FlushTransferBuffer();
+
+               // Clear MAX_RT bit in status register
+               Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.MAX_RT) });
+            }
+
+            if (status.TxFull)
+            {
+               FlushTransferBuffer();
+            }
+
+            if (status.DataSent)
+            {
+               // Clear TX_DS bit in status register
+               Execute(Commands.W_REGISTER, Registers.STATUS, new[] { (byte)(1 << Bits.TX_DS) });
+               Debug.WriteLine("Data Sent!");
+            }
+
+            // Enable RX
+            IsEnabled = true;
+
+            if (payloadCorrupted)
+            {
+               Debug.WriteLine("Corrupted data received");
+            }
+            else if (payloadCount > 0)
+            {
+               if (payloadCount > payloads.Length)
+                  Debug.WriteLine("Unexpected payloadCount value = " + payloadCount);
+
+               for (var i = 0; i < System.Math.Min(payloadCount, payloads.Length); i++)
+               {
+                  var payload = payloads[i];
+                  var payloadWithoutCommand = new byte[payload.Length - 1];
+                  Array.Copy(payload, 1, payloadWithoutCommand, 0, payload.Length - 1);
+                  OnDataReceived(payloadWithoutCommand);
+               }
+            }
+         else if (status.DataSent)
+         {
+            OnTransmitSuccess();
+         }
+         else
+         {
+            OnTransmitFailed();
+         }
+      }
+      
+      #endregion Private Helpers
+   }
 }
