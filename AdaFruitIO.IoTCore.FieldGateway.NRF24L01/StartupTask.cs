@@ -29,6 +29,7 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
    using Newtonsoft.Json.Converters;
    using Radios.RF24;
    using Windows.ApplicationModel.Background;
+   using Windows.Devices.Gpio;
    using Windows.Foundation.Diagnostics;
    using Windows.Storage;
 
@@ -63,8 +64,14 @@ namespace devMobile.AdaFruitIO.IoTCore.FieldGateway.NRF24L01
             return;
          }
 
-         // Configure the AdaFruit API client
-         LoggingFields adaFruitIOSettings = new LoggingFields();
+			// Disable the onboard beeper so it doesn't whine so much
+         GpioController gpioController = GpioController.GetDefault();
+			GpioPin buzzer = gpioController.OpenPin(4);
+			buzzer.SetDriveMode(GpioPinDriveMode.Output);
+			buzzer.Write(GpioPinValue.Low);
+
+			// Configure the AdaFruit API client
+			LoggingFields adaFruitIOSettings = new LoggingFields();
          if (!string.IsNullOrEmpty(this.applicationSettings.AdaFruitIOBaseUrl))
          {
             this.adaFruitIOClient.BaseUrl = this.applicationSettings.AdaFruitIOBaseUrl;
