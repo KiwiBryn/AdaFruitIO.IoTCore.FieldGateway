@@ -49,4 +49,4 @@ I use the device portal "Apps\File Explorer"
 
 There are more detaiedl instructions and sample projects on Hackster.IO
 * [nRF24L01 clients](https://www.hackster.io/KiwiBryn)
-* [Azure IoT Hub project](https://www.hackster.io/KiwiBryn/adafruit-io-nrf24l01-windows-10-iot-core-field-gateway-e4a1e0)
+* [Adafruit.IO Hub project](https://www.hackster.io/KiwiBryn/adafruit-io-nrf24l01-windows-10-iot-core-field-gateway-e4a1e0)
