@@ -48,5 +48,10 @@ User Folders\LocalAppData\ AdaFruitIO.IoTCore.FieldGateway.NRF24L01-uwp_1.0.0.0_
 I use the device portal "Apps\File Explorer"
 
 There are more detaiedl instructions and sample projects on Hackster.IO
-* [nRF24L01 clients](https://www.hackster.io/KiwiBryn)
+* Sample clients
+  * [Arduino](https://github.com/KiwiBryn/FieldGateway.nRF24L01.DuinoClient)
+  * [devDuino](https://github.com/KiwiBryn/FieldGateway.nRF24L01.devDuinoV2.2Client) 
+  * [Netduino](https://github.com/KiwiBryn/FieldGateway.nRF24L01.NetduinoClient)
 * [Adafruit.IO Hub project](https://www.hackster.io/KiwiBryn/adafruit-io-nrf24l01-windows-10-iot-core-field-gateway-e4a1e0)
+
+
